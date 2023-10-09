@@ -9,6 +9,8 @@ public class ActionHandler : MonoBehaviour
     private Player cur_player;
     public bool busy = false;
 
+    public GameObject BarrierSample;
+
     private Controller controller;
 
     // Start is called before the first frame update
@@ -60,8 +62,13 @@ public class ActionHandler : MonoBehaviour
 
     public bool SetAction(SetBarrier action)
     {
+        // check there are left barriers
+        if (controller.GetPresentPlayer().barrier_num == 0)
+        {
+            return false;
+        }
+
         // init the action
-        GameObject BarrierSample = GameObject.Find("Barrier");
         BoardPiece c_boardpiece1 = action.m_FirstObject.GetComponent<BoardPiece>();
         BoardPiece c_boardpiece2 = action.m_SecondObject.GetComponent<BoardPiece>();
         GameBoard c_board = c_boardpiece1.gameboard;
@@ -74,7 +81,7 @@ public class ActionHandler : MonoBehaviour
         }
 
         Debug.Log("processing BarrierCheck .......");
-        if (!controller.BarrierCheck(c_boardpiece1.GetInnerPos, c_boardpiece2.GetInnerPos)) return false;
+        if (!controller.DoubleBarrierCheck(c_boardpiece1.GetInnerPos, c_boardpiece2.GetInnerPos)) return false;
         Debug.Log("finish BarrierCheck");
 
         // init
@@ -93,6 +100,9 @@ public class ActionHandler : MonoBehaviour
         // set handler
         cur_action = action;
         busy = true;
+
+        controller.GetPresentPlayer().barrier_num -= 1;
+        
         return true;
     }
 

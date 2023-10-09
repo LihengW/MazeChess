@@ -18,7 +18,7 @@ public class GameBoard : MonoBehaviour
 
     private int[,] innerboard;
     private bool[, , ,] innerbarrier;
-    private float distance = 2.05F;  
+    public float distance = 2.05F;  
 
     void Awake()
     {
@@ -52,7 +52,7 @@ public class GameBoard : MonoBehaviour
     public GameObject create_player((int, int) pos, int ID) {
         innerboard[pos.Item1, pos.Item2] = ID;
         (float, float) world_pos = board_to_world(pos);
-        GameObject player = Instantiate(playerunit, new Vector3(world_pos.Item1, 1.1F, world_pos.Item2), Quaternion.identity);
+        GameObject player = Instantiate(playerunit, new Vector3(world_pos.Item1, 0.0f, world_pos.Item2), Quaternion.identity);
         player.GetComponent<Player>().GetInnerPos = pos;
         player.GetComponent<Player>().SetBoard(this);
         SetGameObjectLayer(player, "Player");

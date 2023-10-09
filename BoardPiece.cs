@@ -6,12 +6,19 @@ public class BoardPiece : MonoBehaviour
 {
     private (int, int) inner_pos;
     public GameBoard gameboard;
+    private Animator m_SurfAnimator;
+
+    // Selection Animation
+    private GameObject SelectedSurf;
+    public bool selected;
 
 
     // Start is called before the first frame update
     void Start()
     {
-        ;
+        selected = false;
+        SelectedSurf = transform.Find("SelectedSurface").gameObject;
+        m_SurfAnimator = SelectedSurf.GetComponent<Animator>();
     }
 
     // Update is called once per frame
@@ -39,5 +46,29 @@ public class BoardPiece : MonoBehaviour
     public int GetInnerPosY()
     {
         return inner_pos.Item2;
+    }
+
+    public void Selected()
+    {
+        m_SurfAnimator.SetTrigger("Expand");
+
+        if (m_SurfAnimator.GetCurrentAnimatorStateInfo(0).IsName("SelectedSurfaceOff"))
+        {
+            m_SurfAnimator.ResetTrigger("Shrink");
+        }
+
+        selected = true;
+    }
+
+    public void Deselected()
+    {
+        m_SurfAnimator.SetTrigger("Shrink");
+        
+        if (m_SurfAnimator.GetCurrentAnimatorStateInfo(0).IsName("SelectedSurfaceOn"))
+        {
+            m_SurfAnimator.ResetTrigger("Expand");
+        }
+
+        selected = false;
     }
 }
