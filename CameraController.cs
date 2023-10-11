@@ -45,11 +45,11 @@ public class CameraController : MonoBehaviour
         sphere_r = Board_radius * Mathf.Sqrt(2) + 4;
         Angleid = 0;
 
-        if (GameObject.Find("InitData").GetComponent<InitData>().playernum == 4)
+        if (GameObject.Find("InitData").GetComponent<InitData>().unitnum == 4)
         {
             round_rotation_degree = 90;
         }
-        else if (GameObject.Find("InitData").GetComponent<InitData>().playernum == 2)
+        else if (GameObject.Find("InitData").GetComponent<InitData>().unitnum == 2)
         {
             round_rotation_degree = 180;
         }
@@ -131,21 +131,21 @@ public class CameraController : MonoBehaviour
             m_MainCamera.GetComponent<Transform>().rotation = m_FixedCamera.GetComponent<Transform>().rotation;
         }
 
-        float pre_x_angle = ((Vector2)defaultCameraAngles[0]).x;
-        Angleid++;
-        if (Angleid == defaultCameraAngles.Count)
-        {
-            Angleid = 0;
-        }
+        // float pre_x_angle = ((Vector2)defaultCameraAngles[0]).x;
+        // Angleid++;
+        // if (Angleid == defaultCameraAngles.Count)
+        // {
+        //     Angleid = 0;
+        // }
 
-        Vector2 nextAngle = (Vector2)defaultCameraAngles[Angleid];
-        float y = sphere_r * Mathf.Cos(Mathf.PI * (90.0f - nextAngle.y) / 180.0f);
-        float d = sphere_r * Mathf.Sin(Mathf.PI * (90.0f - nextAngle.y) / 180.0f);
-        float x = d * Mathf.Cos(Mathf.PI * nextAngle.x / 180.0f) + Board_radius;
-        float z = d * Mathf.Sin(Mathf.PI * nextAngle.x / 180.0f) + Board_radius;
+        // Vector2 nextAngle = (Vector2)defaultCameraAngles[Angleid];
+        // float y = sphere_r * Mathf.Cos(Mathf.PI * (90.0f - nextAngle.y) / 180.0f);
+        // float d = sphere_r * Mathf.Sin(Mathf.PI * (90.0f - nextAngle.y) / 180.0f);
+        // float x = d * Mathf.Cos(Mathf.PI * nextAngle.x / 180.0f) + Board_radius;
+        // float z = d * Mathf.Sin(Mathf.PI * nextAngle.x / 180.0f) + Board_radius;
 
-        m_MainCamera.GetComponent<Transform>().position = m_FixedCamera.GetComponent<Transform>().position;
-        m_MainCamera.GetComponent<Transform>().rotation = m_FixedCamera.GetComponent<Transform>().rotation;
+        // m_MainCamera.GetComponent<Transform>().position = m_FixedCamera.GetComponent<Transform>().position;
+        // m_MainCamera.GetComponent<Transform>().rotation = m_FixedCamera.GetComponent<Transform>().rotation;
 
         m_Rotating = true;
     }

@@ -22,17 +22,23 @@ public class Player : MonoBehaviour
 
     private (int, int)[] direction;
 
+    // Unit
+    private Unit  m_Unit;
+
+
     // Animation
     private Animator m_Animator;
     public bool selected;
     private IEnumerator coroutine;
     private Color m_Color;
     private float m_EmssionRate;
+    private float m_LightIntensity;
 
     // Start is called before the first frame update
     void Awake()
     {
         m_EmssionRate = 0.1f;
+        m_LightIntensity = 1.0f;
         direction = new (int, int)[4]{(0, 1), (0, -1), (1, 0), (-1, 0)};
         m_Animator = transform.GetComponent<Animator>();
         selected = false;
@@ -61,10 +67,21 @@ public class Player : MonoBehaviour
         this.gameboard = board;
     }
 
+    public void SetUnit(Unit unit)
+    {
+        m_Unit = unit;
+    }
+
+    public Unit GetUnit()
+    {
+        return m_Unit;
+    }
+
     public void SetColor(Color color)
     {
         m_Color = color;
         transform.Find("Cylinder").GetComponent<Renderer>().materials[1].SetColor("_Color", color);
+        transform.Find("PlayerLight").GetComponent<Light>().color = color;
         color = color * m_EmssionRate;
         transform.Find("Cylinder").GetComponent<Renderer>().materials[1].SetColor("_EmissionColor", color);
     }
@@ -87,6 +104,11 @@ public class Player : MonoBehaviour
     {
         while (true)
         {
+            if (!selected)
+            {
+                yield return StartCoroutine(DeselectAnimation());
+            }
+
             if (transform.position.y > 0.3f)
             {
                 yield break;
@@ -94,7 +116,9 @@ public class Player : MonoBehaviour
 
             transform.position = transform.position + new Vector3(0, 0.00005f, 0);
             m_EmssionRate += 0.0002f;
+            m_LightIntensity += 0.00015f;
             transform.Find("Cylinder").GetComponent<Renderer>().materials[1].SetColor("_EmissionColor", m_Color * m_EmssionRate);
+            transform.Find("PlayerLight").GetComponent<Light>().intensity = m_LightIntensity;
             yield return new WaitForFixedUpdate();
         }
     }
@@ -117,14 +141,21 @@ public class Player : MonoBehaviour
     {
         while (true)
         {
+            if (selected)
+            {
+                yield return StartCoroutine(SelectAnimation());
+            }
             if (transform.position.y < 0.0f)
             {
                 m_EmssionRate = 0.1f;
+                m_LightIntensity = 1.0f;
                 yield break;
             }
             transform.position = transform.position - new Vector3(0, 0.00005f, 0);
             m_EmssionRate -= 0.0002f;
+            m_LightIntensity -= 0.00015f;
             transform.Find("Cylinder").GetComponent<Renderer>().materials[1].SetColor("_EmissionColor", m_Color * m_EmssionRate);
+            transform.Find("PlayerLight").GetComponent<Light>().intensity = m_LightIntensity;
             yield return new WaitForFixedUpdate();
         }
     }

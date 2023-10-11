@@ -41,11 +41,11 @@ public class ControllerUI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Player preplayer = m_Controller.GetPresentPlayer();
-        RoundDisplay = "Round of " + "<color="+ colorlist[preplayer.GetID()] + ">" + preplayer.playername + "</color>";
+        Unit preunit = m_Controller.GetPresentUnit();
+        RoundDisplay = "Round of " + "<color="+ colorlist[preunit.UnitID] + ">" + preunit.UnitName + "</color>";
         RoundText.text = RoundDisplay;
 
-        BarrierNum.text = "Barrier : " + preplayer.barrier_num;
+        BarrierNum.text = "Barrier : " + preunit.barrier_num;
     }
 
     public void OnClickBarrier()
@@ -65,7 +65,7 @@ public class ControllerUI : MonoBehaviour
 
     public void EndGame()
     {
-        Player preplayer = m_Controller.GetPresentPlayer();
-        EndText.text = "<color="+ colorlist[preplayer.GetID()] + ">" + preplayer.playername + "</color> WINS!";
+        Unit preunit = m_Controller.GetPresentUnit();
+        EndText.text = "<color="+ colorlist[preunit.UnitID] + ">" + preunit.UnitName + "</color> WINS!";
     }
 }

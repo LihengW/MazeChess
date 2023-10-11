@@ -6,7 +6,7 @@ public class ActionHandler : MonoBehaviour
 {
     private Action cur_action = null;
 
-    private Player cur_player;
+    private Unit cur_unit;
     public bool busy = false;
 
     public GameObject BarrierSample;
@@ -22,6 +22,8 @@ public class ActionHandler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        cur_unit = controller.GetPresentUnit();
+
         if (cur_action != null)
         {
             busy = true;
@@ -63,7 +65,7 @@ public class ActionHandler : MonoBehaviour
     public bool SetAction(SetBarrier action)
     {
         // check there are left barriers
-        if (controller.GetPresentPlayer().barrier_num == 0)
+        if (cur_unit.barrier_num == 0)
         {
             return false;
         }
@@ -86,28 +88,39 @@ public class ActionHandler : MonoBehaviour
 
         // init
         c_board.insert_2side_barrier(c_boardpiece1.GetInnerPos, c_boardpiece2.GetInnerPos);
-        Vector3 loc = (action.m_FirstObject.transform.position + action.m_SecondObject.transform.position) / 2 + 1.0f * Vector3.up;
+        Vector3 loc = (action.m_FirstObject.transform.position + action.m_SecondObject.transform.position) / 2 + 1.0f * Vector3.up + action.m_Height * Vector3.up;
         if (Xoffset == 1)
         {
             GameObject barrier = Instantiate(BarrierSample, loc, Quaternion.AngleAxis(90, Vector3.up));
+            SetGameObjectLayer(barrier, "Barrier");
             barrier.GetComponent<Barrier>().GetInnerPos = new Vector4(c_boardpiece1.GetInnerPos.Item1, c_boardpiece1.GetInnerPos.Item2, c_boardpiece2.GetInnerPos.Item1,c_boardpiece2.GetInnerPos.Item2);
+            action.NewBarrier = barrier;
         }
         else
         {
             GameObject barrier = Instantiate(BarrierSample, loc, Quaternion.identity);
+            SetGameObjectLayer(barrier, "Barrier");
             barrier.GetComponent<Barrier>().GetInnerPos = new Vector4(c_boardpiece1.GetInnerPos.Item1, c_boardpiece1.GetInnerPos.Item2, c_boardpiece2.GetInnerPos.Item1,c_boardpiece2.GetInnerPos.Item2);
+            action.NewBarrier = barrier;
         }
+
         // set handler
         cur_action = action;
         busy = true;
 
-        controller.GetPresentPlayer().barrier_num -= 1;
+        cur_unit.barrier_num -= 1;
         
         return true;
     }
 
-    public void SetCurPlayer(Player player)
+    public void SetCurUnit(Unit unit)
     {
-        cur_player = player;
+        cur_unit = unit;
+    }
+
+    private void SetGameObjectLayer(GameObject go, string layerName) 
+    {
+        int layer = LayerMask.NameToLayer(layerName);
+        go.layer = layer;
     }
 }

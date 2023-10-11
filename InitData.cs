@@ -8,8 +8,10 @@ public class InitData : MonoBehaviour
     public static InitData Instance { get; private set; }
     public int param { get; set; } = 0;
 
-    public int playernum = 2;
-    public int barriernum = 5;
+    public int unitnum;
+    public int playernum;
+    public int barriernum;
+    public int mode;
  
     void Awake()
     {
@@ -37,13 +39,11 @@ public class InitData : MonoBehaviour
 
     public void OnClick2Player()
     {
-        playernum = 2;
-        barriernum = 8;
+        unitnum = 2;
     }
 
     public void OnClick4Player()
     {
-        playernum = 4;
-        barriernum = 5;
+        unitnum = 4;
     }
 }
