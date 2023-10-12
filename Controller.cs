@@ -9,7 +9,6 @@ public class Unit
     public int UnitID;
     private List<Player> players;
     public bool in_round;
-
     public int barrier_num;
 
     public Unit(string name, int id, int barriernum)
@@ -31,8 +30,21 @@ public class Unit
         players.Add(player);
     }
 
-    public Player GetPlayer(int id)
+    public bool IsContainPlayer(int player_id)
     {
+        foreach (Player player in players)
+        {
+            if (player.GetID() == player_id)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Player GetPlayer(int id)
+    {
+        // inside ID
         return players[id];
     }
 
@@ -49,6 +61,14 @@ public class Unit
             res = res || player.ReachTarget();
         }
         return res;
+    }
+
+    public void KillCheck((int, int) pos)
+    {
+        foreach (Player player in players)
+        {
+            player.KillCheck(pos);
+        }
     }
 
     static public void StartRound(Unit unit)
@@ -93,8 +113,7 @@ public class Controller : MonoBehaviour
     ActionHandler actionHandler;
 
     // state info para
-    int present_unit;
-    bool CameraMoving = false;  // During the action of camera moving
+    public int present_unit;
 
     // common data structure
     Color[] m_ColorList;
@@ -117,6 +136,7 @@ public class Controller : MonoBehaviour
         actionHandler = GameObject.Find("ActionHandler").GetComponent<ActionHandler>();
 
         statemanager = new StateManager(actionHandler);
+        statemanager.controller = this;
 
         (int, int)[] init_pos = new (int, int)[16]{((gameboard.gridx - 1)/2 , 0), ((gameboard.gridx - 1)/2 + 1 , 0), ((gameboard.gridx - 1)/2 - 1 , 0), ((gameboard.gridx - 1)/2 + 2 , 0),
                                                    (0 , (gameboard.gridy - 1)/2), (0 , (gameboard.gridy - 1)/2 + 1), (0 , (gameboard.gridy - 1)/2 - 1), (0 , (gameboard.gridy - 1)/2 + 2),
@@ -149,6 +169,7 @@ public class Controller : MonoBehaviour
             Unit newunit = new Unit(u.ToString(), u, barrier_num);
             unitlist[u] = newunit;
             cameracontroller.CreatePlayerCamera(init_camera_angle[k*u]);
+            (int, int)[] dir = DirectionCreate(u); 
 
             for (int i = 0; i < player_num; i++) 
             {
@@ -158,8 +179,11 @@ public class Controller : MonoBehaviour
                 playerlist[id].SetID(id);
                 playerlist[id].SetColor(m_ColorList[u]);
                 playerlist[id].playername = id.ToString();
+                playerlist[id].SetDirection(dir);
 
+                playerlist[id].SetUnit(newunit);
                 newunit.AddPlayer(playerlist[id]);
+
 
                 // set target for player
                 if (init_tar[k*u].Item1 == 0) // row target
@@ -174,8 +198,6 @@ public class Controller : MonoBehaviour
                         playerlist[id].AddTarget((init_tar[k*u].Item2, j));
                     }
                 }
-
-                playerlist[id].RouteInit();
             }
         }
 
@@ -186,27 +208,16 @@ public class Controller : MonoBehaviour
 
     void Start()
     {
-        ;
+        for (int id = 0; id < playerlist.Length; id++)
+        {
+            playerlist[id].RouteInit();
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (CameraMoving)
-        {
-            CameraMoving = cameracontroller.GetState();
-        }
-        else
-        {
-            // In player round action
-            statemanager.Update();
-            if (statemanager.cur_action != null && statemanager.cur_action.handled)
-            {
-                NextRound();
-                statemanager.cur_action = null;
-                CameraMoving = true;
-            }
-        }
+        statemanager.Update();
     }
 
 //  Barrier Setting Checker
@@ -259,29 +270,26 @@ public class Controller : MonoBehaviour
 
 
 //  Round Control Function 
-    void NextRound()
+
+    public void StartRound()
     {
-        // check if game is over
-        if (unitlist[present_unit].ReachTarget())
-        {
-            controllerUI.EndGame();
-            //EndGame();
-        }
-        
-        // push to the next round
-        Debug.Log("Next Round");
-        Unit.EndRound(unitlist[present_unit]);
         present_unit++;
         if (present_unit == unit_num)
         {
             present_unit = 0;
         }
         Unit.StartRound(unitlist[present_unit]);
+    }
 
-        cameracontroller.NextRound();
+    public void EndRound()
+    {
+        if (GetPresentUnit().ReachTarget())
+        {
+            controllerUI.EndGame();
+            //EndGame();
+        }
 
-        // actionHandler.SetCurPlayer(playerlist[present_player]);
-        statemanager.GetModeState = 0;
+        Unit.EndRound(unitlist[present_unit]);
     }
 
     void EndGame()
@@ -289,23 +297,43 @@ public class Controller : MonoBehaviour
         SceneManager.LoadScene("Openning");
     }
 
+
+//  Functional Function & Interfaces
     public Unit GetPresentUnit()
     {
         return unitlist[present_unit];
     }
 
-//  Functional Function
+    public void ActivateCameraRotation()
+    {
+        cameracontroller.NextRound();
+    }
+
+    public bool IsCameraRotating()
+    {
+        return cameracontroller.GetState();
+    }
+
+    public void KillCheck((int, int) pos)
+    {
+        foreach (Unit unit in unitlist)
+        {
+            unit.KillCheck(pos);
+        }
+    }
+
+// UI Event Function
     public void OnClickBarrier()
     {
         if (GetPresentUnit().barrier_num > 0)
         {
             statemanager.GetModeState = statemanager.GetModeState == 0 ? 1 : 0;
-            statemanager.ClearSelected();
         }
         else
         {
             Debug.Log("No left barrier");
         }
+        statemanager.ClearSelected();
     }
 
     public void OnClickCamera()
@@ -329,6 +357,24 @@ public class Controller : MonoBehaviour
             colors[i] = color;
         }
         return colors;
+    }
+
+    private (int, int)[]  DirectionCreate(int unitid)
+    {
+        switch (unitid)
+        {
+            case 0:
+                return new (int, int)[4]{(0, 1), (-1, 0), (1, 0), (0, -1)};
+            case 1:
+                return new (int, int)[4]{(1, 0), (0, 1), (0, -1), (-1, 0)};
+            case 2:
+                return new (int, int)[4]{(0, -1), (1, 0), (-1, 0), (0, 1)};
+            case 3:
+                return new (int, int)[4]{(-1, 0), (0, -1), (0, 1), (1, 0)};
+            default:
+                Debug.Log("UnitID not found");
+                return new (int, int)[4]{(-1, 0), (0, -1), (0, 1), (1, 0)};
+        };
     }
 }
 
@@ -397,17 +443,30 @@ public class StateManager
 {
     // State 0 means in player operation
     // State 1 means in implementing action
+    // State 2 means in Round Intervals (do Camera Rotation & Round End Check)
     private int State = 0;
+
     // ModeState 0 means in moving player
     // ModeState 1 means in setting barriers
     private int ModeState = 0;
+
+    // EndState 0 means Checking the End Part of previous Round
+    // EndState 1 means doing Kill Check & Animate the KILL
+    // EndState 2 means doing the Camera Rotating
+    // EndState 3 means Starting the New Round
+    private int EndState = 0;
+
+    public Controller controller;
+
     List<GameObject> SelectedList;
 
     MouseSelect mouseselect;
     ActionHandler handler;
-
     public Action cur_action;
-    public Player cur_player;
+
+    // special State var
+    private bool CameraActivated;
+    private (int, int) MovedPosition;
 
     public StateManager(ActionHandler o_handler)
     {
@@ -415,25 +474,27 @@ public class StateManager
         SelectedList = new List<GameObject>();
         cur_action = null;
         handler = o_handler;
+        
+        CameraActivated = false;
+        MovedPosition = (-1, -1);
     }
 
     public void Update()
     {
-        GameObject clicked = mouseselect.GetObject();
-        if (clicked != null)
-        {
-            SelectedList.Add(clicked);
-        }
-
+        // Player Operation Time
         if (State == 0)
         {
+            // receive Click Action when Player can move
+            GameObject clicked = mouseselect.GetObject();
+            if (clicked != null)
+            {
+                SelectedList.Add(clicked);
+            }
+
             if (SelectedList.Count == 2)
             {
                 if (SelectedList[0].layer == 7 && SelectedList[1].layer == 8)
                 {
-                    // movement of player
-                    SelectedList[0].GetComponent<Player>().Deselected();
-                    SelectedList[1].GetComponent<BoardPiece>().Deselected();
                     // reasonable action
                     if (ModeState == 0)
                     {
@@ -443,14 +504,16 @@ public class StateManager
                         { 
                             State = 1;
                             cur_action = new_action;
+                            MovedPosition = SelectedList[1].GetComponent<BoardPiece>().GetInnerPos;
                         }
+                    }
+                    else if (ModeState == 1)
+                    {
+                        // Set Barrier Code;
                     }
                 }
                 else if (SelectedList[0].layer == 8 && SelectedList[1].layer == 8)
                 {
-                    // set a barrier
-                    SelectedList[0].GetComponent<BoardPiece>().Deselected();
-                    SelectedList[1].GetComponent<BoardPiece>().Deselected();
                     // reasonable action
                     if (ModeState == 1)
                     {
@@ -464,22 +527,23 @@ public class StateManager
                         }
                     }
                 }
-                // Invalid Selection
-                else if (SelectedList[0].layer == 7 && SelectedList[1].layer == 7)
-                {
-                    SelectedList[0].GetComponent<Player>().Deselected();
-                    SelectedList[1].GetComponent<Player>().Deselected();
-                }
                 else if (SelectedList[0].layer == 8 && SelectedList[1].layer == 7)
                 {
-                    SelectedList[0].GetComponent<BoardPiece>().Deselected();
-                    SelectedList[1].GetComponent<Player>().Deselected();
+                    if (ModeState == 1)
+                    {
+                        // Set Barrier Code;
+                    }
                 }
 
-                SelectedList.Clear();
+                ClearSelected();
+            }
+            else if (SelectedList.Count >= 2)
+            {
+                // Invalid Selection
+                ClearSelected();
             }
         }
-
+        // System Operation Time
         else if (State == 1)
         {
             if (handler.busy)
@@ -490,9 +554,57 @@ public class StateManager
             else
             {
                 cur_action.handled = true;
-                State = 0;
+                State = 2;
             }
-        }  
+        } 
+        // Round Check/Pushing Time
+        else if (State == 2)
+        {
+            if (EndState == 0)
+            {
+                Debug.Log("Pushing to the Next Round...");
+                controller.EndRound();
+                EndState++;
+            }
+            else if (EndState == 1)
+            {
+                Debug.Log("Doing the Kill Check...");
+                if (MovedPosition != (-1, -1))
+                {
+                    controller.KillCheck(MovedPosition);
+                }
+                MovedPosition = (-1, -1);
+                EndState++;
+            }
+            else if (EndState == 2)
+            {
+                if (!CameraActivated)
+                {
+                    Debug.Log("Rotating the Camera...");
+                    controller.ActivateCameraRotation();
+                    CameraActivated = true;
+                }
+                else
+                {
+                    if (!controller.IsCameraRotating()) // the Camera is not moving
+                    {
+                        Debug.Log("Camera Rotated");
+                        CameraActivated = false;
+                        EndState++;
+                    }
+                }
+            }
+            else if (EndState == 3)
+            {
+                Debug.Log("New Round Starting !");
+                controller.StartRound();
+                // End State Reset
+                EndState = 0;
+                // Action State Reset
+                State = 0;
+                ModeState = 0;
+            }
+        }
     }
     public int GetState
     {
@@ -572,7 +684,6 @@ public
     public override bool implement() // return true if the implement is finished
     {
         m_FirstObject.transform.position += m_Offset * Time.deltaTime * 2.0f;
-        Debug.Log(m_Offset);
         Vector2 dis = new Vector2(m_SecondObject.transform.position.x - m_FirstObject.transform.position.x, m_SecondObject.transform.position.z - m_FirstObject.transform.position.z);
         if (dis.magnitude < 0.1f)
         {

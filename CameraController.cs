@@ -115,7 +115,6 @@ public class CameraController : MonoBehaviour
     public void CreatePlayerCamera(float angle)
     {
         defaultCameraAngles.Add(new Vector2(angle, 30));
-        Debug.Log(angle);
     }
 
     public bool GetState()

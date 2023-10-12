@@ -15,11 +15,12 @@ public class Player : MonoBehaviour
     private (int, int) inner_pos;
     private GameBoard gameboard;
 
-    // For Barrier Detection
+    // For Route Searching...
+    static private int HashCode;
     private (int, int)[] route;
-    private HashSet<string> routeset = new HashSet<string>();
+    private HashSet<int> route_pos_set = new HashSet<int>(); // record postion
+    private HashSet<(int, int)> route_pos2pos_set = new HashSet<(int, int)>(); // record action (from pos1 to pos2)
     private HashSet<(int, int)> visited = new HashSet<(int, int)>();
-
     private (int, int)[] direction;
 
     // Unit
@@ -42,6 +43,7 @@ public class Player : MonoBehaviour
         direction = new (int, int)[4]{(0, 1), (0, -1), (1, 0), (-1, 0)};
         m_Animator = transform.GetComponent<Animator>();
         selected = false;
+        route = new (int, int)[4];
     }
 
     void Start()
@@ -58,6 +60,36 @@ public class Player : MonoBehaviour
         }
     }
 
+    // Static funciton
+    public static void SetHashCode(int code)
+    {
+        HashCode = code;
+    }
+    public static int PostoHashPos((int, int) pos)
+    {
+        return pos.Item1 * HashCode + pos.Item2;
+    }
+    public static (int, int) HashPostoPos(int HashPos)
+    {
+        return (HashPos / HashCode, HashPos % HashCode);
+    }
+    public static (int, int) Pos2toHashPos2((int, int) pos1, (int, int) pos2)
+    {
+        return (PostoHashPos(pos1), PostoHashPos(pos2));
+    }
+    public static (int, int, int, int) Pos2toHashPos2((int, int) HashPos)
+    {
+        (int, int) pos1 = HashPostoPos(HashPos.Item1);
+        (int, int) pos2 = HashPostoPos(HashPos.Item2);
+        return (pos1.Item1, pos1.Item2, pos2.Item1, pos2.Item2);
+    }
+    
+    private static (int, int) PositionAdd((int, int) pos1, (int, int) pos2)
+    {
+        return (pos1.Item1 + pos2.Item1, pos1.Item2 + pos2.Item2);
+    }
+
+    // Member Function
     public void SetID(int id) {this.id = id;}
 
     public int GetID() {return id;}
@@ -66,6 +98,12 @@ public class Player : MonoBehaviour
     {
         this.gameboard = board;
     }
+
+    public void SetDirection((int, int)[] dir)
+    {
+        direction = dir;
+    }
+
 
     public void SetUnit(Unit unit)
     {
@@ -177,21 +215,12 @@ public class Player : MonoBehaviour
 
     public bool BarrierCheck((int, int) from_pos, (int, int) to_pos)
     {
-        var pos = (from_pos.Item1, from_pos.Item2, to_pos.Item1, to_pos.Item2).ToString();
-
-        if (routeset.Contains(pos)) return true;
-        
-        return false;
+        return route_pos2pos_set.Contains(Pos2toHashPos2(from_pos, to_pos));
     }
 
     public bool DoubleBarrierCheck((int, int) from_pos, (int, int) to_pos)
     {
-        var pos1 = (from_pos.Item1, from_pos.Item2, to_pos.Item1, to_pos.Item2).ToString();
-        var pos2 = (to_pos.Item1, to_pos.Item2, from_pos.Item1, from_pos.Item2).ToString();
-
-        if (routeset.Contains(pos1) || routeset.Contains(pos2)) return true;
-        
-        return false;
+        return route_pos2pos_set.Contains(Pos2toHashPos2(from_pos, to_pos)) || route_pos2pos_set.Contains(Pos2toHashPos2(to_pos, from_pos));
     }
 
     public void RouteInit()
@@ -199,17 +228,31 @@ public class Player : MonoBehaviour
         Stack<(int, int)> trace = new Stack<(int, int)>();
         trace.Push(inner_pos);
         bool res = searchroute(inner_pos, trace);
-        string routeinfo = playername.ToString();
-        for (int i = 0; i < route.Length - 1; i++)
-        {
-            routeset.Add((route[i].Item1, route[i].Item2, route[i+1].Item1, route[i+1].Item2).ToString());
-            routeinfo += " " + route[i].ToString() + " ";
-        }
+        UpdateRouteRecord();
+
+        visited.Clear();
+        Debug.Log("Route Initialized!");
+    }
+
+
+    public bool RelocateRouteSearch()
+    {
+        Stack<(int, int)> trace = new Stack<(int, int)>();
+        trace.Push(inner_pos);
+        bool res = searchroute(inner_pos, trace);
+
         visited.Clear();
 
-        routeinfo += " " + route[route.Length - 1].ToString() + " ";
-        Debug.Log(routeinfo);
-        Debug.Log("Route Initialized!");
+        if (res)
+        {
+            UpdateRouteRecord();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+
     }
 
     public bool reRouteSearch((int, int) from_pos, (int, int) to_pos, bool doubleside)
@@ -232,18 +275,7 @@ public class Player : MonoBehaviour
         
         if (res)
         {
-            routeset.Clear();
-            string routeinfo = playername.ToString();
-            string routesetinfo = playername.ToString();
-            for (int i = 0; i < route.Length - 1; i++)
-            {
-                routeset.Add((route[i].Item1, route[i].Item2, route[i+1].Item1, route[i+1].Item2).ToString());
-                routeinfo += " " + route[i].ToString() + " ";
-                routesetinfo += " " + (route[i].Item1, route[i].Item2, route[i+1].Item1, route[i+1].Item2).ToString() + " ";
-            }
-            routeinfo += " " + route[route.Length - 1].ToString() + " ";
-            Debug.Log(routeinfo);
-            Debug.Log(routesetinfo);
+            UpdateRouteRecord();
             return true;
         }
         else
@@ -270,7 +302,7 @@ public class Player : MonoBehaviour
             foreach (var dir in direction)
             {
                 var next_pos = PositionAdd(player_pos, dir);
-                if (gameboard.isInsideBoard(next_pos) && !visited.Contains(next_pos) && !gameboard.HasBarrier(player_pos, next_pos))
+                if (gameboard.isInsideBoard(next_pos) && !visited.Contains(next_pos) && !gameboard.HasBarrier(player_pos, next_pos) && (gameboard.GetInnerPos(next_pos) == -1 || m_Unit.IsContainPlayer(gameboard.GetInnerPos(next_pos))))
                 {
                     //Debug.Log("Forwarding to" + next_pos.ToString() + " .......");
                     trace.Push(next_pos);
@@ -285,7 +317,6 @@ public class Player : MonoBehaviour
                     else if (visited.Contains(next_pos)) failcode += 10;
                     else if (gameboard.HasBarrier(player_pos, next_pos)) failcode += 100;
                     else failcode += 1000;
-
                     //Debug.Log("Forwarding to" + next_pos.ToString() + "Failed :" + failcode.ToString());
                 }
             }
@@ -293,9 +324,71 @@ public class Player : MonoBehaviour
         }
     }
 
-
-    static (int, int) PositionAdd((int, int) pos1, (int, int) pos2)
+    private void UpdateRouteRecord()
     {
-        return (pos1.Item1 + pos2.Item1, pos1.Item2 + pos2.Item2);
+        route_pos2pos_set.Clear();
+        route_pos_set.Clear();
+
+        string routeinfo = playername.ToString();
+        string routesetinfo = playername.ToString();
+        for (int i = 0; i < route.Length - 1; i++)
+        {
+            route_pos_set.Add(PostoHashPos(route[i]));
+            route_pos2pos_set.Add(Pos2toHashPos2(route[i], route[i+1]));
+            routeinfo += " " + route[i].ToString() + " ";
+            routesetinfo += " " + (route[i].Item1, route[i].Item2, route[i+1].Item1, route[i+1].Item2).ToString() + " ";
+        }
+        route_pos_set.Add(PostoHashPos(route[route.Length - 1]));
+        routeinfo += " " + route[route.Length - 1].ToString() + " ";
+        Debug.Log(routeinfo);
+        Debug.Log(routesetinfo);
+    }
+
+    public void KillCheck((int, int) pos)
+    {
+        if (route_pos_set.Contains(PostoHashPos(pos)))
+        {
+            Stack<(int, int)> trace = new Stack<(int, int)>();
+            trace.Push(inner_pos);
+            bool res = searchroute(inner_pos, trace);
+            visited.Clear();
+            if (res)
+            {
+                UpdateRouteRecord();
+            }
+            else
+            {
+                // Chess are Killed (Nowhere to Escape!)
+                if (CheckBox())
+                {
+                    GameObject.Destroy(gameObject, 2.0f);
+                }
+                else
+                {
+                    Debug.Log("Blocked!");
+                }
+            }
+        }
+    }
+
+    private bool CheckBox()
+    {
+        // check for real box
+        foreach (var dir in direction)
+        {
+            (int, int) pos;
+            var next_pos = inner_pos;
+            do
+            {
+                pos = next_pos;
+                next_pos = PositionAdd(pos, dir);
+                if (!gameboard.isInsideBoard(next_pos)) 
+                {
+                    return false; // boundary box
+                }
+            } while (!gameboard.HasBarrier(pos, next_pos) && (gameboard.GetInnerPos(next_pos) == -1 || m_Unit.IsContainPlayer(gameboard.GetInnerPos(next_pos))));
+        }
+
+        return true; // real box
     }
 }

@@ -25,6 +25,12 @@ public class GameBoard : MonoBehaviour
         gameboard = new GameObject[gridx, gridy];
         innerboard = new int[gridx, gridy];
         innerbarrier = new bool[gridx, gridy, gridx, gridy];
+
+        for (int x = 0; x < gridx; x++) {
+            for (int y = 0; y < gridy; y++) {
+                innerboard[x, y] = -1;
+            }
+        }
     }
 
 
@@ -38,7 +44,6 @@ public class GameBoard : MonoBehaviour
                 gameboard[x, y].GetComponent<BoardPiece>().gameboard = this;
                 gameboard[x, y].GetComponent<BoardPiece>().SetInnerPos((x, y));
                 SetGameObjectLayer(gameboard[x, y],  "Board");
-                innerboard[x, y] = 0;
             }
         }
     }
@@ -50,6 +55,7 @@ public class GameBoard : MonoBehaviour
     }
 
     public GameObject create_player((int, int) pos, int ID) {
+        // player ID
         innerboard[pos.Item1, pos.Item2] = ID;
         (float, float) world_pos = board_to_world(pos);
         GameObject player = Instantiate(playerunit, new Vector3(world_pos.Item1, 0.0f, world_pos.Item2), Quaternion.identity);
@@ -62,12 +68,12 @@ public class GameBoard : MonoBehaviour
 
     public bool move_player((int, int) from_pos, (int, int) to_pos, Player player) {
         // check legality
-        if (innerboard[to_pos.Item1, to_pos.Item2] != 0) return false; // no player in the position
+        if (innerboard[to_pos.Item1, to_pos.Item2] != -1) return false; // no player in the position
         if (Math.Abs(to_pos.Item1 - from_pos.Item1) + Math.Abs(to_pos.Item2 - from_pos.Item2) > player.move_ability) return false; // over the moving distance
         if (innerbarrier[from_pos.Item1, from_pos.Item2, to_pos.Item1, to_pos.Item2]) return false; // no barrier in the way
 
         int id = innerboard[from_pos.Item1, from_pos.Item2];
-        innerboard[from_pos.Item1, from_pos.Item2] = 0;
+        innerboard[from_pos.Item1, from_pos.Item2] = -1;
         innerboard[to_pos.Item1, to_pos.Item2] = id;
         return true;
     }
@@ -96,6 +102,11 @@ public class GameBoard : MonoBehaviour
     public (float, float) board_to_world((int, int) board_pos) {
         (float, float) world_pos = (board_pos.Item1 * distance, board_pos.Item2 * distance);
         return world_pos;
+    }
+
+    public int GetInnerPos((int, int) pos)
+    {
+        return innerboard[pos.Item1, pos.Item2];
     }
 
     public bool HasBarrier((int, int) from_pos, (int, int) to_pos)

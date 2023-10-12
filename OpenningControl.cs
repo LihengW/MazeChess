@@ -32,6 +32,7 @@ public class OpenningControl : MonoBehaviour
 
     public void ToMaingame()
     {
+        Debug.Log(BarrierDropdown.value);
         m_InitData.barriernum = BarrierDropdown.value + 5;
         m_InitData.playernum = ChessDropdown.value + 1;
         m_InitData.mode = ModeDropdown.value;

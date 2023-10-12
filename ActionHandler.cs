@@ -51,6 +51,7 @@ public class ActionHandler : MonoBehaviour
         if (!is_legal) return false;
         
         c_player.GetInnerPos = c_boardpiece.GetInnerPos;
+        c_player.RelocateRouteSearch();
 
         // screen space
         action.m_Offset = new Vector3(action.m_SecondObject.transform.position.x - action.m_FirstObject.transform.position.x, 0, action.m_SecondObject.transform.position.z - action.m_FirstObject.transform.position.z).normalized;
