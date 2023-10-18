@@ -11,7 +11,8 @@ public class CameraController : MonoBehaviour
     private GameObject m_FixedCamera;
 
     // Initialize the Camera
-    public float Board_radius = 8.2f + 1.0f;
+    public float Board_radius = 8.2f;
+    public float camera_distance = 12.0f;
     public Vector2 MainCamera_angles;
 
     private int Angleid;
@@ -42,7 +43,7 @@ public class CameraController : MonoBehaviour
         m_TopCamera.SetActive(false);
         m_FixedCamera.SetActive(false);
 
-        sphere_r = Board_radius * Mathf.Sqrt(2) + 4;
+        sphere_r = Board_radius * Mathf.Sqrt(2) + camera_distance;
         Angleid = 0;
 
         if (GameObject.Find("InitData").GetComponent<InitData>().unitnum == 4)

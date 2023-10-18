@@ -42,6 +42,11 @@ public class Unit
         return false;
     }
 
+    public List<Player> GetPlayerList()
+    {
+        return players;
+    }
+
     private Player GetPlayer(int id)
     {
         // inside ID
@@ -71,12 +76,21 @@ public class Unit
         }
     }
 
-    static public void StartRound(Unit unit)
+    static public bool StartRound(Unit unit)
     {
         unit.in_round = true;
-        for (int i = 0; i < unit.GetPlayerNum(); i++)
+        int playernum = unit.GetPlayerNum();
+        if (playernum > 0)
         {
-            unit.GetPlayer(i).in_round = true;
+            for (int i = 0; i < unit.GetPlayerNum(); i++)
+            {
+                unit.GetPlayer(i).in_round = true;
+            }
+            return true;
+        }
+        else
+        {
+            return false;;
         }
     }
 
@@ -105,7 +119,6 @@ public class Controller : MonoBehaviour
     int barrier_num = 5;
     int unit_num = 4;
 
-    Player[] playerlist;
     Unit[] unitlist;
 
     // turn start -> choose a player -> choose which place to move -> do the move -> turn end
@@ -151,7 +164,7 @@ public class Controller : MonoBehaviour
         // Initialization of every player;
 
         unitlist = new Unit[unit_num];
-        playerlist = new Player[player_num * unit_num];
+        Player[] playerlist = new Player[player_num * unit_num];
 
         int k = 0;
         if (unit_num == 4)
@@ -208,9 +221,12 @@ public class Controller : MonoBehaviour
 
     void Start()
     {
-        for (int id = 0; id < playerlist.Length; id++)
+        for (int id = 0; id < unitlist.Length; id++)
         {
-            playerlist[id].RouteInit();
+            foreach (Player player in unitlist[id].GetPlayerList())
+            {
+                player.RouteInit();
+            }
         }
     }
 
@@ -224,21 +240,23 @@ public class Controller : MonoBehaviour
     public bool BarrierCheck((int, int) from_pos, (int, int) to_pos)
     {
         if (gameboard.HasBarrier(from_pos, to_pos)) return false;
-        foreach (Player player in playerlist)
-        {
-            bool blocked = player.BarrierCheck(from_pos, to_pos);
-            if (blocked)
+        foreach (Unit unit in unitlist){
+            foreach (Player player in unit.GetPlayerList())
             {
-                Debug.Log(player.playername.ToString() + " : Start Searching.......");
-                bool suc = player.reRouteSearch(from_pos, to_pos, false);
-                if (!suc)
+                bool blocked = player.BarrierCheck(from_pos, to_pos);
+                if (blocked)
                 {
+                    Debug.Log(player.playername.ToString() + " : Start Searching.......");
+                    bool suc = player.reRouteSearch(from_pos, to_pos, false);
+                    if (!suc)
+                    {
 
-                    Debug.Log(player.playername.ToString() + ": Searching Failed!");
-                    return false;
+                        Debug.Log(player.playername.ToString() + ": Searching Failed!");
+                        return false;
+                    }
                 }
+                Debug.Log(player.playername.ToString() + " : Barrier Check successfully!");
             }
-            Debug.Log(player.playername.ToString() + " : Barrier Check successfully!");
         }
         Debug.Log("All Barrier Check successfully!");
 
@@ -248,20 +266,22 @@ public class Controller : MonoBehaviour
     public bool DoubleBarrierCheck((int, int) from_pos, (int, int) to_pos)
     {
         if (gameboard.HasBarrier(from_pos, to_pos) || gameboard.HasBarrier(to_pos, from_pos)) return false;
-        foreach (Player player in playerlist)
-        {
-            bool blocked = player.DoubleBarrierCheck(from_pos, to_pos);
-            if (blocked)
+        foreach (Unit unit in unitlist){
+            foreach (Player player in unit.GetPlayerList())
             {
-                Debug.Log(player.playername.ToString() + " : Start Searching.......");
-                bool suc = player.reRouteSearch(from_pos, to_pos, true);
-                if (!suc)
+                bool blocked = player.DoubleBarrierCheck(from_pos, to_pos);
+                if (blocked)
                 {
-                    Debug.Log(player.playername.ToString() + ": Searching Failed!");
-                    return false;
+                    Debug.Log(player.playername.ToString() + " : Start Searching.......");
+                    bool suc = player.reRouteSearch(from_pos, to_pos, true);
+                    if (!suc)
+                    {
+                        Debug.Log(player.playername.ToString() + ": Searching Failed!");
+                        return false;
+                    }
                 }
+                Debug.Log(player.playername.ToString() + " : Barrier Check successfully!");
             }
-            Debug.Log(player.playername.ToString() + " : Barrier Check successfully!");
         }
         Debug.Log("All Barrier Check successfully!");
 
@@ -271,14 +291,16 @@ public class Controller : MonoBehaviour
 
 //  Round Control Function 
 
-    public void StartRound()
+    public bool StartRound()
     {
         present_unit++;
         if (present_unit == unit_num)
         {
             present_unit = 0;
         }
-        Unit.StartRound(unitlist[present_unit]);
+        controllerUI.ActivateButtons();
+        
+        return Unit.StartRound(unitlist[present_unit]);
     }
 
     public void EndRound()
@@ -288,7 +310,8 @@ public class Controller : MonoBehaviour
             controllerUI.EndGame();
             //EndGame();
         }
-
+        controllerUI.ResetButtons();
+        controllerUI.InactivateButtons();
         Unit.EndRound(unitlist[present_unit]);
     }
 
@@ -597,12 +620,21 @@ public class StateManager
             else if (EndState == 3)
             {
                 Debug.Log("New Round Starting !");
-                controller.StartRound();
+                bool res = controller.StartRound();
                 // End State Reset
                 EndState = 0;
                 // Action State Reset
-                State = 0;
-                ModeState = 0;
+                if (res)
+                {
+                    State = 0;
+                    ModeState = 0;
+                }
+                else
+                {
+                    // Directly End the Round
+                    State = 2;
+                    ModeState = 0;
+                }
             }
         }
     }

@@ -6,14 +6,16 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     public string playername = "default";
-    public bool in_round;
-
     public int move_ability = 1;
     public int barrier_num = 5;
     private int id;
     private List<(int, int)> target = new List<(int, int)>();
-    private (int, int) inner_pos;
     private GameBoard gameboard;
+
+    // Status
+    public bool in_round;
+    private (int, int) inner_pos;
+    private int m_Status;  // 0 is dead, 1 is active, 2 is blocked; 
 
     // For Route Searching...
     static private int HashCode;
@@ -44,6 +46,7 @@ public class Player : MonoBehaviour
         m_Animator = transform.GetComponent<Animator>();
         selected = false;
         route = new (int, int)[4];
+        m_Status = 1;
     }
 
     void Start()
@@ -104,6 +107,11 @@ public class Player : MonoBehaviour
         direction = dir;
     }
 
+    public int GetStatus() {return m_Status;}
+
+    public void SetActive() {m_Status = 1;}
+    public void SetBlocked() {m_Status = 2;}
+    public void SetDead() {m_Status = 0;}
 
     public void SetUnit(Unit unit)
     {
@@ -302,13 +310,17 @@ public class Player : MonoBehaviour
             foreach (var dir in direction)
             {
                 var next_pos = PositionAdd(player_pos, dir);
-                if (gameboard.isInsideBoard(next_pos) && !visited.Contains(next_pos) && !gameboard.HasBarrier(player_pos, next_pos) && (gameboard.GetInnerPos(next_pos) == -1 || m_Unit.IsContainPlayer(gameboard.GetInnerPos(next_pos))))
+                if (gameboard.isInsideBoard(next_pos) && !visited.Contains(next_pos) && !gameboard.HasBarrier(player_pos, next_pos))
                 {
-                    //Debug.Log("Forwarding to" + next_pos.ToString() + " .......");
-                    trace.Push(next_pos);
-                    res = res || searchroute(next_pos, trace);
-                    if (res) return true;
-                    trace.Pop();
+                    if ((m_Status == 1 && (gameboard.GetInnerPos(next_pos) == -1 || m_Unit.IsContainPlayer(gameboard.GetInnerPos(next_pos)))) // Active Check 
+                        ||
+                        m_Status == 2) // Block Check
+                    {
+                        trace.Push(next_pos);
+                        res = res || searchroute(next_pos, trace);
+                        if (res) return true;
+                        trace.Pop();
+                    }
                 }
                 else
                 {
@@ -346,28 +358,64 @@ public class Player : MonoBehaviour
 
     public void KillCheck((int, int) pos)
     {
-        if (route_pos_set.Contains(PostoHashPos(pos)))
+        if (m_Status == 1)
         {
+            if (route_pos_set.Contains(PostoHashPos(pos)))
+            {
+                Stack<(int, int)> trace = new Stack<(int, int)>();
+                trace.Push(inner_pos);
+                bool res = searchroute(inner_pos, trace);
+                visited.Clear();
+                if (res)
+                {
+                    UpdateRouteRecord();
+                }
+                else
+                {
+                    // Chess are Killed (Nowhere to Escape!)
+                    if (CheckBox())
+                    {
+                        SetDead();
+                        m_Unit.GetPlayerList().Remove(this);
+                        GameObject.Destroy(gameObject);
+                    }
+                    else
+                    {
+                        SetBlocked();
+                        RelocateRouteSearch();
+                    }
+                }
+            }
+        }
+        else if (m_Status == 2)
+        {
+            if (CheckBox())
+            {
+                SetDead();
+                m_Unit.GetPlayerList().Remove(this);
+                GameObject.Destroy(gameObject);
+            }
+            
+            m_Status = 1; // pretend the status is back
+
             Stack<(int, int)> trace = new Stack<(int, int)>();
             trace.Push(inner_pos);
             bool res = searchroute(inner_pos, trace);
             visited.Clear();
+
             if (res)
             {
                 UpdateRouteRecord();
             }
             else
             {
-                // Chess are Killed (Nowhere to Escape!)
-                if (CheckBox())
-                {
-                    GameObject.Destroy(gameObject, 2.0f);
-                }
-                else
-                {
-                    Debug.Log("Blocked!");
-                }
+                SetBlocked();
+                RelocateRouteSearch();
             }
+        }
+        else
+        {
+            Debug.Log("Unknown Status!");
         }
     }
 

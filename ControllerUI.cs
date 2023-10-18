@@ -14,6 +14,11 @@ public class ControllerUI : MonoBehaviour
     private Text BarrierNum;
     private Text EndText;
 
+    private NWButton BarrierButton;
+    private NWButton SkillButton;    
+    private NWButton CameraButton;
+    private NWButton ResetButton;
+
     private string[] colorlist;
 
     string RoundDisplay;
@@ -36,6 +41,12 @@ public class ControllerUI : MonoBehaviour
         BarrierNum = GameObject.Find("BarrierNum").GetComponent<Text>();
         EndText = GameObject.Find("EndText").GetComponent<Text>();
         EndText.text = "";
+
+        BarrierButton = new NWButton(GameObject.Find("BarrierButton"));
+        SkillButton = new NWButton(GameObject.Find("SkillButton"));
+        CameraButton = new NWButton(GameObject.Find("CameraButton"));
+        ResetButton = new NWButton(GameObject.Find("ResetButton"));
+
     }
 
     // Update is called once per frame
@@ -51,6 +62,7 @@ public class ControllerUI : MonoBehaviour
     public void OnClickBarrier()
     {
         m_Controller.OnClickBarrier();
+        BarrierButton.OnClickedButton();
     }
 
     public void OnClickSkill()
@@ -68,4 +80,101 @@ public class ControllerUI : MonoBehaviour
         Unit preunit = m_Controller.GetPresentUnit();
         EndText.text = "<color="+ colorlist[preunit.UnitID] + ">" + preunit.UnitName + "</color> WINS!";
     }
+
+    public void InactivateButtons()
+    {
+        BarrierButton.InactivateButton();
+        SkillButton.InactivateButton();
+        CameraButton.InactivateButton();
+        ResetButton.InactivateButton();
+    }
+
+    public void ActivateButtons()
+    {
+        BarrierButton.ActivateButton();
+        SkillButton.ActivateButton();
+        CameraButton.ActivateButton();
+        ResetButton.ActivateButton();
+    }
+
+    public void ResetButtons()
+    {
+        BarrierButton.Reset();
+        SkillButton.Reset();
+        CameraButton.Reset();
+        ResetButton.Reset();
+    }
 }
+
+
+public class NWButton
+{
+    public string name;
+    private GameObject buttonObj;
+    private Button buttonComp;
+    private Image imageComp;
+    private Text textComp;
+    public bool Selected;
+
+    private Color SelectedColor;
+    private Color NormalColor;
+    private Color SelectedTextColor;
+    private Color NormalTextColor;
+
+    public NWButton(GameObject buttonObj)
+    {
+        buttonComp = buttonObj.GetComponent<Button>();
+        imageComp = buttonObj.GetComponent<Image>();
+        textComp = buttonObj.transform.Find("Text").GetComponent<Text>();
+        name = textComp.text;
+        Selected = false;
+
+        NormalColor = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+        SelectedColor = new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+        NormalTextColor = new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+        SelectedTextColor = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+
+        imageComp.color = NormalColor;
+        textComp.color = NormalTextColor;
+    }
+
+    public void ActivateButton()
+    {
+        buttonComp.interactable = true;
+    }
+
+    public void InactivateButton()
+    {
+        buttonComp.interactable = false;
+    }
+
+    public void OnClickedButton()
+    {
+        Debug.Log("Select " + name);
+        if (Selected)
+        {
+            imageComp.color = NormalColor;
+            textComp.color = NormalTextColor;
+            Selected = false;
+        }
+        else
+        {
+            imageComp.color = SelectedColor;
+            textComp.color = SelectedTextColor;
+            Selected = true;
+        }
+    }
+
+    public void Reset()
+    {
+        if (Selected)
+        {
+            imageComp.color = NormalColor;
+            textComp.color = NormalTextColor;
+            Selected = false;
+        }
+    }
+
+
+
+} 
