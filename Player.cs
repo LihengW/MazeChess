@@ -37,6 +37,7 @@ public class Player : MonoBehaviour
     private float m_EmssionRate;
     private float m_LightIntensity;
 
+
     // Start is called before the first frame update
     void Awake()
     {
@@ -128,6 +129,8 @@ public class Player : MonoBehaviour
         m_Color = color;
         transform.Find("Cylinder").GetComponent<Renderer>().materials[1].SetColor("_Color", color);
         transform.Find("PlayerLight").GetComponent<Light>().color = color;
+        var main = transform.Find("Particle").GetComponent<ParticleSystem>().main;
+        main.startColor = color;
         color = color * m_EmssionRate;
         transform.Find("Cylinder").GetComponent<Renderer>().materials[1].SetColor("_EmissionColor", color);
     }
@@ -205,6 +208,28 @@ public class Player : MonoBehaviour
             yield return new WaitForFixedUpdate();
         }
     }
+
+    public void Disappear()
+    {
+        m_Animator.SetTrigger("Vanish");
+        m_Unit.GetPlayerList().Remove(this);
+        m_Unit.KillPlayer(this);
+    }
+
+    public bool FinishDisappearAnimation()
+    {
+        if (m_Animator.GetCurrentAnimatorStateInfo(0).IsName("Dead"))
+        {
+            GameObject.Destroy(gameObject, 1.0f);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+
     public (int, int) GetInnerPos
     {
         get { return inner_pos; }
@@ -377,7 +402,7 @@ public class Player : MonoBehaviour
                     {
                         SetDead();
                         m_Unit.GetPlayerList().Remove(this);
-                        GameObject.Destroy(gameObject);
+                        Disappear();
                     }
                     else
                     {

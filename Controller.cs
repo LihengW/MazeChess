@@ -8,6 +8,7 @@ public class Unit
     public string UnitName;
     public int UnitID;
     private List<Player> players;
+    private List<Player> m_KillList;
     public bool in_round;
     public int barrier_num;
 
@@ -18,6 +19,7 @@ public class Unit
         in_round = false;
         barrier_num = barriernum;
         players = new List<Player>();
+        m_KillList = new List<Player>();
     }
 
     public void AddPlayerObject(GameObject gb)
@@ -74,6 +76,27 @@ public class Unit
         {
             player.KillCheck(pos);
         }
+    }
+
+    public void KillPlayer(Player player)
+    {
+        m_KillList.Add(player);
+    }
+
+    public bool FinishDisappear()
+    {
+        if (m_KillList.Count > 0)
+        {
+            foreach (Player player in m_KillList)
+            {
+                if (player.FinishDisappearAnimation())
+                {
+                    m_KillList.Remove(player);
+                }
+            }
+        }
+
+        return m_KillList.Count == 0;
     }
 
     static public bool StartRound(Unit unit)
@@ -345,6 +368,16 @@ public class Controller : MonoBehaviour
         }
     }
 
+    public bool FinishDisappear()
+    {
+        bool res = true;
+        foreach (Unit unit in unitlist)
+        {
+            res = res & unit.FinishDisappear();
+        }
+        return res;
+    }
+
 // UI Event Function
     public void OnClickBarrier()
     {
@@ -596,8 +629,13 @@ public class StateManager
                 {
                     controller.KillCheck(MovedPosition);
                 }
+
                 MovedPosition = (-1, -1);
-                EndState++;
+                
+                if (controller.FinishDisappear())
+                {
+                    EndState++;
+                }
             }
             else if (EndState == 2)
             {
