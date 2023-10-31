@@ -98,6 +98,26 @@ public class GameBoard : MonoBehaviour
         return res1 && res2;
     }
 
+    public bool erase_1side_barrier((int, int) from_pos, (int, int) to_pos)
+    {
+        if (HasBarrier(from_pos, to_pos))
+        {
+            innerbarrier[from_pos.Item1, from_pos.Item2, to_pos.Item1, to_pos.Item2] = false;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public bool erase_2side_barrier((int, int) from_pos, (int, int) to_pos)
+    {
+        bool res1 = erase_1side_barrier(from_pos, to_pos);
+        bool res2 = erase_1side_barrier(to_pos, from_pos);
+        return res1 && res2;
+    }
+
 
     public (float, float) board_to_world((int, int) board_pos) {
         (float, float) world_pos = (board_pos.Item1 * distance, board_pos.Item2 * distance);

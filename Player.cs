@@ -34,8 +34,10 @@ public class Player : MonoBehaviour
     public bool selected;
     private IEnumerator coroutine;
     private Color m_Color;
+    private Color m_BlockedColor;
     private float m_EmssionRate;
     private float m_LightIntensity;
+    private float m_ColorLerpRate;
 
 
     // Start is called before the first frame update
@@ -48,6 +50,7 @@ public class Player : MonoBehaviour
         selected = false;
         route = new (int, int)[4];
         m_Status = 1;
+        m_ColorLerpRate = 0.0f;
     }
 
     void Start()
@@ -135,6 +138,11 @@ public class Player : MonoBehaviour
         transform.Find("Cylinder").GetComponent<Renderer>().materials[1].SetColor("_EmissionColor", color);
     }
 
+    public void SetBlockedColor(Color color)
+    {
+        m_BlockedColor = color;
+    }
+
     public void Selected()
     {
         m_Animator.SetTrigger("Select");
@@ -160,6 +168,7 @@ public class Player : MonoBehaviour
 
             if (transform.position.y > 0.3f)
             {
+                coroutine = null;
                 yield break;
             }
 
@@ -198,6 +207,7 @@ public class Player : MonoBehaviour
             {
                 m_EmssionRate = 0.1f;
                 m_LightIntensity = 1.0f;
+                coroutine = null;
                 yield break;
             }
             transform.position = transform.position - new Vector3(0, 0.00005f, 0);
@@ -205,6 +215,28 @@ public class Player : MonoBehaviour
             m_LightIntensity -= 0.00015f;
             transform.Find("Cylinder").GetComponent<Renderer>().materials[1].SetColor("_EmissionColor", m_Color * m_EmssionRate);
             transform.Find("PlayerLight").GetComponent<Light>().intensity = m_LightIntensity;
+            yield return new WaitForFixedUpdate();
+        }
+    }
+
+    private void Blocked()
+    {
+        SetBlocked();
+        coroutine = BlockAnimation();
+    }
+
+    private IEnumerator BlockAnimation()
+    {
+        while (true)
+        {
+            if (m_ColorLerpRate >= 1.0f)
+            {
+                m_ColorLerpRate = 1.0f;
+                coroutine = null;
+                yield break;
+            }
+            m_ColorLerpRate += 0.0002f;
+            transform.Find("Cylinder").GetComponent<Renderer>().materials[1].SetColor("_Color", (m_Color * (1.0f - m_ColorLerpRate) + m_BlockedColor * m_ColorLerpRate));
             yield return new WaitForFixedUpdate();
         }
     }
@@ -337,9 +369,7 @@ public class Player : MonoBehaviour
                 var next_pos = PositionAdd(player_pos, dir);
                 if (gameboard.isInsideBoard(next_pos) && !visited.Contains(next_pos) && !gameboard.HasBarrier(player_pos, next_pos))
                 {
-                    if ((m_Status == 1 && (gameboard.GetInnerPos(next_pos) == -1 || m_Unit.IsContainPlayer(gameboard.GetInnerPos(next_pos)))) // Active Check 
-                        ||
-                        m_Status == 2) // Block Check
+                    if (m_Status == 1 && (gameboard.GetInnerPos(next_pos) == -1 || m_Unit.IsContainPlayer(gameboard.GetInnerPos(next_pos)))) // Active Check 
                     {
                         trace.Push(next_pos);
                         res = res || searchroute(next_pos, trace);
@@ -406,36 +436,19 @@ public class Player : MonoBehaviour
                     }
                     else
                     {
-                        SetBlocked();
-                        RelocateRouteSearch();
+                        Blocked();
                     }
                 }
             }
         }
         else if (m_Status == 2)
         {
+            // if blocked check if the player is dead
             if (CheckBox())
             {
                 SetDead();
                 m_Unit.GetPlayerList().Remove(this);
-                GameObject.Destroy(gameObject);
-            }
-            
-            m_Status = 1; // pretend the status is back
-
-            Stack<(int, int)> trace = new Stack<(int, int)>();
-            trace.Push(inner_pos);
-            bool res = searchroute(inner_pos, trace);
-            visited.Clear();
-
-            if (res)
-            {
-                UpdateRouteRecord();
-            }
-            else
-            {
-                SetBlocked();
-                RelocateRouteSearch();
+                Disappear();
             }
         }
         else

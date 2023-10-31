@@ -92,17 +92,15 @@ public class ActionHandler : MonoBehaviour
         Vector3 loc = (action.m_FirstObject.transform.position + action.m_SecondObject.transform.position) / 2 + 1.0f * Vector3.up + action.m_Height * Vector3.up;
         if (Xoffset == 1)
         {
-            GameObject barrier = Instantiate(BarrierSample, loc, Quaternion.AngleAxis(90, Vector3.up));
-            SetGameObjectLayer(barrier, "Barrier");
-            barrier.GetComponent<Barrier>().GetInnerPos = new Vector4(c_boardpiece1.GetInnerPos.Item1, c_boardpiece1.GetInnerPos.Item2, c_boardpiece2.GetInnerPos.Item1,c_boardpiece2.GetInnerPos.Item2);
-            action.NewBarrier = barrier;
+            action.NewBarrier = Instantiate(BarrierSample, loc, Quaternion.AngleAxis(90, Vector3.up));
+            SetGameObjectLayer(action.NewBarrier, "Barrier");
+            action.NewBarrier.GetComponent<Barrier>().GetInnerPos = new Vector4(c_boardpiece1.GetInnerPos.Item1, c_boardpiece1.GetInnerPos.Item2, c_boardpiece2.GetInnerPos.Item1,c_boardpiece2.GetInnerPos.Item2);
         }
         else
         {
-            GameObject barrier = Instantiate(BarrierSample, loc, Quaternion.identity);
-            SetGameObjectLayer(barrier, "Barrier");
-            barrier.GetComponent<Barrier>().GetInnerPos = new Vector4(c_boardpiece1.GetInnerPos.Item1, c_boardpiece1.GetInnerPos.Item2, c_boardpiece2.GetInnerPos.Item1,c_boardpiece2.GetInnerPos.Item2);
-            action.NewBarrier = barrier;
+            action.NewBarrier = Instantiate(BarrierSample, loc, Quaternion.identity);
+            SetGameObjectLayer(action.NewBarrier, "Barrier");
+            action.NewBarrier.GetComponent<Barrier>().GetInnerPos = new Vector4(c_boardpiece1.GetInnerPos.Item1, c_boardpiece1.GetInnerPos.Item2, c_boardpiece2.GetInnerPos.Item1,c_boardpiece2.GetInnerPos.Item2);
         }
 
         // set handler
@@ -110,8 +108,32 @@ public class ActionHandler : MonoBehaviour
         busy = true;
 
         cur_unit.barrier_num -= 1;
+
+        // Debug.Log(action.NewBarrier.GetComponent<Barrier>().GetInnerPos);
         
         return true;
+    }
+
+    public bool SetAction(DestroyBarrier action)
+    {
+        GameBoard gb = controller.Game_Board.GetComponent<GameBoard>();
+        Barrier barrier = action.m_FirstObject.GetComponent<Barrier>();
+        var innerpos = barrier.GetInnerPos;
+        Debug.Log(innerpos);
+        bool res = gb.erase_2side_barrier(((int)innerpos[0], (int)innerpos[1]), ((int)innerpos[2], (int)innerpos[3]));
+        if (res)
+        {
+            barrier.GetComponent<Animator>().SetTrigger("Destroy");
+            if (action.use_skillnum)
+            {
+                cur_unit.skill_num -= 1;
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public void SetCurUnit(Unit unit)

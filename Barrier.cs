@@ -4,17 +4,17 @@ using UnityEngine;
 
 public class Barrier : MonoBehaviour
 {
-    private Vector4 inner_pos;
+    public Vector4 inner_pos;
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
-        inner_pos = new Vector4();
+        inner_pos = new Vector4(-1.0f, -1.0f, -1.0f, -1.0f);
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        Debug.Log(inner_pos);
     }
 
     public Vector4 GetInnerPos

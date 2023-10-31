@@ -22,7 +22,7 @@ public class CameraController : MonoBehaviour
 
     bool m_Rotating;
     float sum_rotate_angle;
-    public float rotate_frq = 0.5f;
+    public float rotate_frq = 0.8f;
     private int round_rotation_degree = 90;
 
     void Awake()
@@ -125,28 +125,10 @@ public class CameraController : MonoBehaviour
 
     public void NextRound()
     {
-        if (m_ShowingCamera == m_MainCamera)
-        {
-            m_MainCamera.GetComponent<Transform>().position = m_FixedCamera.GetComponent<Transform>().position;
-            m_MainCamera.GetComponent<Transform>().rotation = m_FixedCamera.GetComponent<Transform>().rotation;
-        }
-
-        // float pre_x_angle = ((Vector2)defaultCameraAngles[0]).x;
-        // Angleid++;
-        // if (Angleid == defaultCameraAngles.Count)
-        // {
-        //     Angleid = 0;
-        // }
-
-        // Vector2 nextAngle = (Vector2)defaultCameraAngles[Angleid];
-        // float y = sphere_r * Mathf.Cos(Mathf.PI * (90.0f - nextAngle.y) / 180.0f);
-        // float d = sphere_r * Mathf.Sin(Mathf.PI * (90.0f - nextAngle.y) / 180.0f);
-        // float x = d * Mathf.Cos(Mathf.PI * nextAngle.x / 180.0f) + Board_radius;
-        // float z = d * Mathf.Sin(Mathf.PI * nextAngle.x / 180.0f) + Board_radius;
-
-        // m_MainCamera.GetComponent<Transform>().position = m_FixedCamera.GetComponent<Transform>().position;
-        // m_MainCamera.GetComponent<Transform>().rotation = m_FixedCamera.GetComponent<Transform>().rotation;
-
+        // reset camera pos
+        m_MainCamera.GetComponent<Transform>().position = m_FixedCamera.GetComponent<Transform>().position;
+        m_MainCamera.GetComponent<Transform>().rotation = m_FixedCamera.GetComponent<Transform>().rotation;
+        // set status
         m_Rotating = true;
     }
 
@@ -197,29 +179,6 @@ public class CameraController : MonoBehaviour
 
         m_MainCamera.transform.RotateAround(new Vector3(Board_radius, 0, Board_radius), m_FixedCamera.transform.right, yoffset);
         m_MainCamera.transform.RotateAround(new Vector3(Board_radius, 0, Board_radius), m_FixedCamera.transform.up, xoffset);
-
-        // MainCamera_angles.x += 4.0f * xoffset;
-        // MainCamera_angles.y += 4.0f * yoffset;
-
-        // if (MainCamera_angles.y > 90.0f)
-        // {
-        //     yoffset = 0.0f;
-        //     MainCamera_angles.y = 90.0f;
-        // }
-        // else if (MainCamera_angles.y < 5.0f)
-        // {
-        //     yoffset = 0.0f;
-        //     MainCamera_angles.y = 5.0f;
-        // }
-
-        // float y = sphere_r * Mathf.Cos(Mathf.PI * (90.0f - MainCamera_angles.y) / 180.0f);
-        // float d = sphere_r * Mathf.Sin(Mathf.PI * (90.0f - MainCamera_angles.y) / 180.0f);
-        // float x = d * Mathf.Cos(Mathf.PI * MainCamera_angles.x / 180.0f) + Board_radius;
-        // float z = d * Mathf.Sin(Mathf.PI * MainCamera_angles.x / 180.0f) + Board_radius;
-
-        // m_MainCamera.GetComponent<Transform>().position = new Vector3(x, y, z);
-        // m_MainCamera.GetComponent<Transform>().Rotate(yoffset, -xoffset, 0, Space.Self);
-
     }
     
 }

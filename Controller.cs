@@ -9,8 +9,10 @@ public class Unit
     public int UnitID;
     private List<Player> players;
     private List<Player> m_KillList;
+    private List<Player> m_BlockedList;
     public bool in_round;
     public int barrier_num;
+    public int skill_num;
 
     public Unit(string name, int id, int barriernum)
     {
@@ -18,8 +20,12 @@ public class Unit
         UnitID = id;
         in_round = false;
         barrier_num = barriernum;
+        skill_num = 2;
+
+        // Player Lists
         players = new List<Player>();
         m_KillList = new List<Player>();
+        m_BlockedList = new List<Player>();
     }
 
     public void AddPlayerObject(GameObject gb)
@@ -60,6 +66,15 @@ public class Unit
         return players.Count;
     }
 
+    // Game Control Func
+    public void InitPlayerRoute()
+    {
+        foreach (Player player in players)
+            {
+                player.RouteInit();
+            }
+    }
+
     public bool ReachTarget()
     {
         bool res = false;
@@ -70,17 +85,21 @@ public class Unit
         return res;
     }
 
+    // Killing function
+    public void KillPlayer(Player player)
+    {
+        m_KillList.Add(player);
+    }
     public void KillCheck((int, int) pos)
     {
         foreach (Player player in players)
         {
             player.KillCheck(pos);
         }
-    }
-
-    public void KillPlayer(Player player)
-    {
-        m_KillList.Add(player);
+        foreach (Player player in m_BlockedList)
+        {
+            player.KillCheck(pos);
+        }
     }
 
     public bool FinishDisappear()
@@ -99,7 +118,39 @@ public class Unit
         return m_KillList.Count == 0;
     }
 
-    static public bool StartRound(Unit unit)
+    // Block functions
+    public void BlockCheck()
+    {
+        foreach (Player player in m_BlockedList)
+        {
+            bool res = player.RelocateRouteSearch();
+            if (res)
+            {
+                ActivatePlayer(player);
+            }
+        }
+    }
+
+    public void BlockPlayer(Player player)
+    {
+        players.Remove(player);
+        m_BlockedList.Add(player);
+    }
+
+    public void ActivatePlayer(Player player)
+    {
+        m_BlockedList.Remove(player);
+        player.SetActive();
+        players.Add(player);
+    }
+
+    public int BlockPlayerCount()
+    {
+        return m_BlockedList.Count;
+    }
+
+    // Unit Round Control
+    static public int StartRound(Unit unit)
     {
         unit.in_round = true;
         int playernum = unit.GetPlayerNum();
@@ -109,11 +160,18 @@ public class Unit
             {
                 unit.GetPlayer(i).in_round = true;
             }
-            return true;
+            return 1;  // normal mode 
         }
         else
         {
-            return false;;
+            if (unit.BlockPlayerCount() > 0)
+            {
+                return 2; // skill limited mode
+            }
+            else
+            {
+                return 0; // skip player (no left)
+            }
         }
     }
 
@@ -214,6 +272,7 @@ public class Controller : MonoBehaviour
                 playerlist[id] = playerob.GetComponent<Player>();
                 playerlist[id].SetID(id);
                 playerlist[id].SetColor(m_ColorList[u]);
+                playerlist[id].SetBlockedColor(m_ColorList[u+4]);
                 playerlist[id].playername = id.ToString();
                 playerlist[id].SetDirection(dir);
 
@@ -246,10 +305,7 @@ public class Controller : MonoBehaviour
     {
         for (int id = 0; id < unitlist.Length; id++)
         {
-            foreach (Player player in unitlist[id].GetPlayerList())
-            {
-                player.RouteInit();
-            }
+            unitlist[id].InitPlayerRoute();
         }
     }
 
@@ -266,6 +322,7 @@ public class Controller : MonoBehaviour
         foreach (Unit unit in unitlist){
             foreach (Player player in unit.GetPlayerList())
             {
+                // Only check the player in the playerlist (Not in the block list)
                 bool blocked = player.BarrierCheck(from_pos, to_pos);
                 if (blocked)
                 {
@@ -292,6 +349,7 @@ public class Controller : MonoBehaviour
         foreach (Unit unit in unitlist){
             foreach (Player player in unit.GetPlayerList())
             {
+                // Only check the player in the playerlist (Not in the block list)
                 bool blocked = player.DoubleBarrierCheck(from_pos, to_pos);
                 if (blocked)
                 {
@@ -314,7 +372,7 @@ public class Controller : MonoBehaviour
 
 //  Round Control Function 
 
-    public bool StartRound()
+    public int StartRound()  // return info code
     {
         present_unit++;
         if (present_unit == unit_num)
@@ -333,6 +391,7 @@ public class Controller : MonoBehaviour
             controllerUI.EndGame();
             //EndGame();
         }
+
         controllerUI.ResetButtons();
         controllerUI.InactivateButtons();
         Unit.EndRound(unitlist[present_unit]);
@@ -368,6 +427,14 @@ public class Controller : MonoBehaviour
         }
     }
 
+    public void BlockCheck()
+    {
+        foreach (Unit unit in unitlist)
+        {
+            unit.BlockCheck();
+        }
+    }
+
     public bool FinishDisappear()
     {
         bool res = true;
@@ -387,7 +454,20 @@ public class Controller : MonoBehaviour
         }
         else
         {
-            Debug.Log("No left barrier");
+            Debug.Log("No left barriers");
+        }
+        statemanager.ClearSelected();
+    }
+
+    public void OnClickSkill()
+    {
+        if (GetPresentUnit().skill_num > 0)
+        {
+            statemanager.GetModeState = statemanager.GetModeState == 0 ? 2 : 0;
+        }
+        else
+        {
+            Debug.Log("No left skills");
         }
         statemanager.ClearSelected();
     }
@@ -400,13 +480,19 @@ public class Controller : MonoBehaviour
 // Tool function
     private Color[] ColorListCreate()
     {
-        string[] strcolors = new string[4];
-        strcolors[0] = "#00ced15f";
+        string[] strcolors = new string[8];
+        strcolors[0] = "#00ced15f"; // DarkTurquoise
         strcolors[1] = "#7fffaa5f";
         strcolors[2] = "#ffff005f";
         strcolors[3] = "#ffc0cb5f";
-        Color[] colors = new Color[4];
-        for (int i = 0; i < 4; i++)
+
+        strcolors[4] = "#4169e1af"; // Blue
+        strcolors[5] = "#66cd00af"; // Chartreuse3
+        strcolors[6] = "#eead0eaf"; // DarkGoldenrod2
+        strcolors[7] = "#d02090af"; // VioletRed
+        
+        Color[] colors = new Color[8];
+        for (int i = 0; i < 8; i++)
         {
             Color color;
             ColorUtility.TryParseHtmlString(strcolors[i], out color);
@@ -459,14 +545,23 @@ public
                 if (HitObj.layer == 7)
                 {
                     // player
-                    Debug.Log("Clicked Player");
-                    if (!HitObj.GetComponent<Player>().selected)
+                    Player player = HitObj.GetComponent<Player>();
+                    if (player.GetStatus() == 1) // Active Player
                     {
-                        HitObj.GetComponent<Player>().Selected();
+                        Debug.Log("Clicked Player");
+                        if (!player.selected)
+                        {
+                            player.Selected();
+                        }
+                        else
+                        {
+                            player.Deselected();
+                        }
                     }
-                    else
+                    else if (player.GetStatus() == 2) // Blocked Player
                     {
-                        HitObj.GetComponent<Player>().Deselected();
+                        Debug.Log("Clicked Blocked Player");
+                        return null;
                     }
                 }
                 else if (HitObj.layer == 8)
@@ -485,7 +580,6 @@ public
                 else if (HitObj.layer == 9)
                 {
                     Debug.Log("Clicked Barrier");
-                    return null;
                 }
                 return HitObj;
             }  
@@ -504,6 +598,8 @@ public class StateManager
 
     // ModeState 0 means in moving player
     // ModeState 1 means in setting barriers
+    // ModeState 2 means in destroying barriers
+
     private int ModeState = 0;
 
     // EndState 0 means Checking the End Part of previous Round
@@ -511,6 +607,8 @@ public class StateManager
     // EndState 2 means doing the Camera Rotating
     // EndState 3 means Starting the New Round
     private int EndState = 0;
+
+    private bool Special_Skill = false;
 
     public Controller controller;
 
@@ -547,7 +645,22 @@ public class StateManager
                 SelectedList.Add(clicked);
             }
 
-            if (SelectedList.Count == 2)
+            if (SelectedList.Count == 1)
+            {
+                if (ModeState == 2 && SelectedList[0].layer == 9)
+                {
+                    
+                    DestroyBarrier new_action = new DestroyBarrier(SelectedList[0], Special_Skill);
+                    bool res = handler.SetAction(new_action);
+                    if (res)
+                    {
+                        State = 1;
+                        cur_action = new_action;
+                    }
+                    ClearSelected();
+                }
+            }
+            else if (SelectedList.Count == 2)
             {
                 if (SelectedList[0].layer == 7 && SelectedList[1].layer == 8)
                 {
@@ -590,6 +703,10 @@ public class StateManager
                         // Set Barrier Code;
                     }
                 }
+                else
+                {
+                    // pass
+                }
 
                 ClearSelected();
             }
@@ -619,14 +736,16 @@ public class StateManager
             if (EndState == 0)
             {
                 Debug.Log("Pushing to the Next Round...");
+                if (Special_Skill) Special_Skill = false;
                 controller.EndRound();
                 EndState++;
             }
             else if (EndState == 1)
             {
-                Debug.Log("Doing the Kill Check...");
+                Debug.Log("Doing the Kill & Blocking Check...");
                 if (MovedPosition != (-1, -1))
                 {
+                    controller.BlockCheck();
                     controller.KillCheck(MovedPosition);
                 }
 
@@ -658,20 +777,27 @@ public class StateManager
             else if (EndState == 3)
             {
                 Debug.Log("New Round Starting !");
-                bool res = controller.StartRound();
+                int res = controller.StartRound();
                 // End State Reset
                 EndState = 0;
                 // Action State Reset
-                if (res)
+                if (res == 1)
                 {
                     State = 0;
                     ModeState = 0;
                 }
-                else
+                else if (res == 0)
                 {
                     // Directly End the Round
                     State = 2;
                     ModeState = 0;
+                }
+                else if (res == 2)
+                {
+                    // special skill mode
+                    State = 0;
+                    ModeState = 0;
+                    Special_Skill = true;
                 }
             }
         }
@@ -796,9 +922,37 @@ public class SetBarrier : Action
         }
         else
         {
-            m_Height = m_Height - 0.005f;
-            NewBarrier.transform.position = NewBarrier.transform.position - Vector3.up * 0.005f;
+            m_Height = m_Height - 0.01f;
+            NewBarrier.transform.position = NewBarrier.transform.position - Vector3.up * 0.01f;
             return false;
         }
     }
 }
+
+public class DestroyBarrier : Action
+{   
+    public bool use_skillnum;
+    public DestroyBarrier()
+    {
+        ;
+    }
+    public DestroyBarrier(GameObject barrier, bool Special_Skill)
+    {
+        m_FirstObject = barrier;
+        m_SecondObject = null;
+        use_skillnum = !Special_Skill;
+    }
+
+    public override bool implement() // return true if the implement is finished
+    {
+        if (m_FirstObject.GetComponent<Animator>().GetCurrentAnimatorStateInfo(0).IsName("BarrierVanished"))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
+

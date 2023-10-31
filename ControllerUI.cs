@@ -12,6 +12,7 @@ public class ControllerUI : MonoBehaviour
 
     private Text RoundText; 
     private Text BarrierNum;
+    private Text SkillNum;
     private Text EndText;
 
     private NWButton BarrierButton;
@@ -39,6 +40,7 @@ public class ControllerUI : MonoBehaviour
         m_Controller = this.transform.parent.gameObject.GetComponent<Controller>();
         RoundText = GameObject.Find("RoundText").GetComponent<Text>();
         BarrierNum = GameObject.Find("BarrierNum").GetComponent<Text>();
+        SkillNum = GameObject.Find("SkillNum").GetComponent<Text>();
         EndText = GameObject.Find("EndText").GetComponent<Text>();
         EndText.text = "";
 
@@ -57,17 +59,35 @@ public class ControllerUI : MonoBehaviour
         RoundText.text = RoundDisplay;
 
         BarrierNum.text = "Barrier : " + preunit.barrier_num;
+        SkillNum.text = "Skill : " + preunit.skill_num;
     }
 
     public void OnClickBarrier()
     {
         m_Controller.OnClickBarrier();
         BarrierButton.OnClickedButton();
+        if (BarrierButton.Selected)
+        {
+            SkillButton.InactivateButton();
+        }
+        else
+        {
+            SkillButton.ActivateButton();
+        }
     }
 
     public void OnClickSkill()
     {
-        Debug.Log("Click Skill");
+        m_Controller.OnClickSkill();
+        SkillButton.OnClickedButton();
+        if (SkillButton.Selected)
+        {
+            BarrierButton.InactivateButton();
+        }
+        else
+        {
+            BarrierButton.ActivateButton();
+        }
     }
 
     public void OnClickCamera()
