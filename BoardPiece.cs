@@ -71,4 +71,14 @@ public class BoardPiece : MonoBehaviour
 
         selected = false;
     }
+
+    public void ChangeColor(Color color)
+    {
+        gameObject.GetComponent<Renderer>().materials[0].SetColor("_Color", color);
+    }
+
+    public void ResetColor()
+    {
+        gameObject.GetComponent<Renderer>().materials[0].SetColor("_Color", new Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+    }
 }

@@ -22,7 +22,7 @@ public class CameraController : MonoBehaviour
 
     bool m_Rotating;
     float sum_rotate_angle;
-    public float rotate_frq = 0.8f;
+    public float rotate_frq = 1.0f;
     private int round_rotation_degree = 90;
 
     void Awake()

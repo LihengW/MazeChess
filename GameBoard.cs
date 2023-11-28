@@ -150,6 +150,18 @@ public class GameBoard : MonoBehaviour
     {
         return pos.Item1 >= 0 && pos.Item1 < gridx && pos.Item2 >= 0 && pos.Item2 < gridy;
     }
+
+    public void ChangeColor((int, int) pos, Color color)
+    {
+        GameObject board = gameboard[pos.Item1, pos.Item2];
+        board.GetComponent<BoardPiece>().ChangeColor(color);
+    }
+
+    public void ResetColor((int, int) pos)
+    {
+        GameObject board = gameboard[pos.Item1, pos.Item2];
+        board.GetComponent<BoardPiece>().ResetColor();
+    }
 }
 
 

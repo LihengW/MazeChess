@@ -9,7 +9,7 @@ public class Player : MonoBehaviour
     public int move_ability = 1;
     public int barrier_num = 5;
     private int id;
-    private List<(int, int)> target = new List<(int, int)>();
+    public List<(int, int)> target = new List<(int, int)>();
     private GameBoard gameboard;
 
     // Status

@@ -298,6 +298,7 @@ public class Controller : MonoBehaviour
 
         Unit.StartRound(unitlist[0]);
         present_unit = 0;
+        
         // actionHandler.SetCurPlayer(playerlist[0]);
     }
 
@@ -306,6 +307,11 @@ public class Controller : MonoBehaviour
         for (int id = 0; id < unitlist.Length; id++)
         {
             unitlist[id].InitPlayerRoute();
+        }
+
+        foreach ((int, int) coord in unitlist[present_unit].GetPlayerList()[0].target)
+        {
+            gameboard.ChangeColor(coord, m_ColorList[present_unit]);
         }
     }
 
@@ -380,6 +386,11 @@ public class Controller : MonoBehaviour
             present_unit = 0;
         }
         controllerUI.ActivateButtons();
+        // show target color
+        foreach ((int, int) coord in unitlist[present_unit].GetPlayerList()[0].target)
+        {
+            gameboard.ChangeColor(coord, m_ColorList[present_unit]);
+        }
         
         return Unit.StartRound(unitlist[present_unit]);
     }
@@ -395,11 +406,16 @@ public class Controller : MonoBehaviour
         controllerUI.ResetButtons();
         controllerUI.InactivateButtons();
         Unit.EndRound(unitlist[present_unit]);
+        foreach ((int, int) coord in unitlist[present_unit].GetPlayerList()[0].target)
+        {
+            gameboard.ResetColor(coord);
+        }
     }
 
-    void EndGame()
+    public void EndGame()
     {
-        SceneManager.LoadScene("Openning");
+        Destroy(GameObject.Find("InitData"));
+        SceneManager.LoadScene("Opening",  LoadSceneMode.Single);
     }
 
 

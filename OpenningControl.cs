@@ -36,7 +36,7 @@ public class OpenningControl : MonoBehaviour
         m_InitData.barriernum = BarrierDropdown.value + 5;
         m_InitData.playernum = ChessDropdown.value + 1;
         m_InitData.mode = ModeDropdown.value;
-        SceneManager.LoadScene("MainGame");
+        SceneManager.LoadScene("MainGame", LoadSceneMode.Single);
     }
 
     public void OnClickPlayer()

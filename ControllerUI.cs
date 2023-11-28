@@ -95,6 +95,11 @@ public class ControllerUI : MonoBehaviour
         m_Controller.OnClickCamera();
     }
 
+    public void OnClickMenu()
+    {
+        m_Controller.EndGame();
+    }
+
     public void EndGame()
     {
         Unit preunit = m_Controller.GetPresentUnit();
