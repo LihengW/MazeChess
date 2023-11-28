@@ -4,9 +4,9 @@
 
 Download:[Nowhere to Escape - Google Drive](https://drive.google.com/drive/folders/1F4u9aTqu11e7nxPIPaPxRYDRQsnRCDFk?usp=sharing)
 
-![s](docs\pic1.png)
+![s](docs/pic1.png)
 
-![s](docs\pic2.png)
+![s](docs/pic2.png)
 
 ## Basic Rules
 
@@ -14,13 +14,13 @@ Download:[Nowhere to Escape - Google Drive](https://drive.google.com/drive/folde
 
 *Yes, you have a clear target now! Also, you can do that by moving your charactor once in a round, Easy one!*
 
-![s](docs\pic3.png)
+![s](docs/pic3.png)
 
 **Second, Set Barriers to slow your opponent !**
 
 *Moving some guys is too easy, so we have more options! you can set some barriers bettween the blocks of chessboard. However, you can't both set a barrier and move your charactor in one round. Work needs to be done one by one, right?*
 
-![s](docs\pic4.png)
+![s](docs/pic4.png)
 
 **Last, Surround your opponent with the barrier and make them vanish !**
 
@@ -28,7 +28,7 @@ Download:[Nowhere to Escape - Google Drive](https://drive.google.com/drive/folde
 
 That's all you need to know for now, just download and enjoy it!
 
-![s](docs\pic5.png)
+![s](docs/pic5.png)
 
 ## Advanced Tech
 
@@ -46,7 +46,7 @@ Ok, so you want to know more about the rules and techs, Let's talk about this a 
 
 *There is a wired rule set in the game. If a piece become "nowhere to escape" but it is not surrounded perfectly, then it has another chance to live. under this situation, the piece will only be frozen instead of  out of game. This is designed for solve some potential abuse in the game, however maybe I will bring about some alternative rules in the future to achieve that.*
 
-![s](docs\pic6.png)
+![s](docs/pic6.png)
 
 **Skills! Powerful magic power allows you to break one barrier once in a game!**
 
